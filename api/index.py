@@ -1,33 +1,39 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 import json
 import numpy as np
 
 app = FastAPI()
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["POST", "OPTIONS", "GET"],
     allow_headers=["*"],
 )
 
+# Load telemetry data
 with open("q-vercel-latency.json", "r") as f:
     DATA = json.load(f)
+
 
 class Request(BaseModel):
     regions: list[str]
     threshold_ms: float
 
+
 @app.get("/")
 def root():
     return {"status": "ok"}
 
-@app.options("/{full_path:path}")
-def preflight(full_path: str):
-    return Response(status_code=200)
+
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return JSONResponse(content={})
+
 
 @app.post("/")
 def analyze(req: Request):
@@ -44,9 +50,10 @@ def analyze(req: Request):
             "p95_latency": round(float(np.percentile(latencies, 95)), 2),
             "avg_uptime": round(sum(uptimes) / len(uptimes), 3),
             "breaches": sum(
-                1 for r in rows
+                1
+                for r in rows
                 if r["latency_ms"] > req.threshold_ms
-            )
+            ),
         }
 
     return result

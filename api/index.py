@@ -15,7 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 with open("q-vercel-latency.json", "r") as f:
     DATA = json.load(f)
 
@@ -36,7 +35,7 @@ CORS_HEADERS = {
 @app.get("/")
 def root():
     return JSONResponse(
-        {"status": "ok"},
+        content={"status": "ok"},
         headers=CORS_HEADERS
     )
 
@@ -44,14 +43,15 @@ def root():
 @app.options("/")
 def options_handler():
     return JSONResponse(
-        {},
+        content={},
         headers=CORS_HEADERS
     )
 
 
 @app.post("/")
 def analyze(req: AnalyticsRequest):
-    result = {}
+
+    regions_result = {}
 
     for region in req.regions:
         rows = [r for r in DATA if r["region"] == region]
@@ -62,17 +62,20 @@ def analyze(req: AnalyticsRequest):
         latencies = [r["latency_ms"] for r in rows]
         uptimes = [r["uptime_pct"] for r in rows]
 
-        result[region] = {
+        regions_result[region] = {
             "avg_latency": round(sum(latencies) / len(latencies), 2),
             "p95_latency": round(float(np.percentile(latencies, 95)), 2),
             "avg_uptime": round(sum(uptimes) / len(uptimes), 3),
             "breaches": sum(
-                1 for r in rows
+                1
+                for r in rows
                 if r["latency_ms"] > req.threshold_ms
             )
         }
 
     return JSONResponse(
-        content=result,
+        content={
+            "regions": regions_result
+        },
         headers=CORS_HEADERS
     )

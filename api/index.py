@@ -24,7 +24,11 @@ with open("q-vercel-latency.json") as f:
 class Request(BaseModel):
     regions: list[str]
     threshold_ms: float
-
+    
+@app.get("/health")
+def health():
+    return {"health": "ok"}
+    
 @app.post("/")
 def analyze(req: Request):
     result = {}

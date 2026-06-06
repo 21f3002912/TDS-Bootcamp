@@ -29,7 +29,7 @@ class Request(BaseModel):
 def health():
     return {"health": "ok"}
     
-@app.post("/")
+@app.post("/analyze")
 def analyze(req: Request):
     result = {}
 

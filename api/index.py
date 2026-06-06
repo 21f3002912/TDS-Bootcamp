@@ -14,9 +14,10 @@ def root():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["POST", "GET", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-    expose_headers=["Access-Control-Allow-Origin"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
 )
 with open("q-vercel-latency.json") as f:
     DATA = json.load(f)

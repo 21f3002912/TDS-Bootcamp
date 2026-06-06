@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import json
 import numpy as np
 
 app = FastAPI()
 
-# Enable CORS for all origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load telemetry data
+
 with open("q-vercel-latency.json", "r") as f:
     DATA = json.load(f)
 
@@ -25,9 +25,28 @@ class AnalyticsRequest(BaseModel):
     threshold_ms: float
 
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Expose-Headers": "Access-Control-Allow-Origin",
+}
+
+
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    return JSONResponse(
+        {"status": "ok"},
+        headers=CORS_HEADERS
+    )
+
+
+@app.options("/")
+def options_handler():
+    return JSONResponse(
+        {},
+        headers=CORS_HEADERS
+    )
 
 
 @app.post("/")
@@ -53,4 +72,7 @@ def analyze(req: AnalyticsRequest):
             )
         }
 
-    return result
+    return JSONResponse(
+        content=result,
+        headers=CORS_HEADERS
+    )

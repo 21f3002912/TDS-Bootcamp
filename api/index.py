@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import json
 import numpy as np
@@ -14,6 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 with open("q-vercel-latency.json", "r") as f:
     DATA = json.load(f)
 
@@ -23,14 +25,33 @@ class AnalyticsRequest(BaseModel):
     threshold_ms: float
 
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Expose-Headers": "Access-Control-Allow-Origin",
+}
+
+
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    return JSONResponse(
+        {"status": "ok"},
+        headers=CORS_HEADERS
+    )
+
+
+@app.options("/")
+def options_handler():
+    return JSONResponse(
+        {},
+        headers=CORS_HEADERS
+    )
 
 
 @app.post("/")
 def analyze(req: AnalyticsRequest):
-    result = {"regions": {}}
+    result = {}
 
     for region in req.regions:
         rows = [r for r in DATA if r["region"] == region]
@@ -41,7 +62,7 @@ def analyze(req: AnalyticsRequest):
         latencies = [r["latency_ms"] for r in rows]
         uptimes = [r["uptime_pct"] for r in rows]
 
-        result["regions"][region] = {
+        result[region] = {
             "avg_latency": round(sum(latencies) / len(latencies), 2),
             "p95_latency": round(float(np.percentile(latencies, 95)), 2),
             "avg_uptime": round(sum(uptimes) / len(uptimes), 3),
@@ -51,4 +72,7 @@ def analyze(req: AnalyticsRequest):
             )
         }
 
-    return result
+    return JSONResponse(
+        content=result,
+        headers=CORS_HEADERS
+    )

@@ -7,6 +7,7 @@ import numpy as np
 
 app = FastAPI()
 
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+# Load telemetry data
 with open("q-vercel-latency.json", "r") as f:
     DATA = json.load(f)
 
@@ -28,23 +29,22 @@ class AnalyticsRequest(BaseModel):
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Expose-Headers": "Access-Control-Allow-Origin",
+    "Access-Control-Allow-Headers": "*",
 }
 
 
 @app.get("/")
 def root():
     return JSONResponse(
-        {"status": "ok"},
+        content={"status": "ok"},
         headers=CORS_HEADERS
     )
 
 
 @app.options("/")
-def options_handler():
+def options_root():
     return JSONResponse(
-        {},
+        content={},
         headers=CORS_HEADERS
     )
 
@@ -62,7 +62,7 @@ def analyze(req: AnalyticsRequest):
         latencies = [r["latency_ms"] for r in rows]
         uptimes = [r["uptime_pct"] for r in rows]
 
-        result["regions"][region] = { = {
+        result["regions"][region] = {
             "avg_latency": round(sum(latencies) / len(latencies), 2),
             "p95_latency": round(float(np.percentile(latencies, 95)), 2),
             "avg_uptime": round(sum(uptimes) / len(uptimes), 3),
